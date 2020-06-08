@@ -22,8 +22,8 @@
  * I'll work on it and refactor everything. I'm planning on using CMAKE since it plays
  * nice with just about any IDE out there.
  **/
-#include "../../WindowManagement/window.hpp"
 
+#include "../../WindowManagement/window.hpp"
 
 #include <iostream>
 #include <string>
@@ -42,6 +42,7 @@
 #include <io.h>
 #endif //WIN32 check
 
+//TODO add linux ifdefs.
 #ifdef VK_USE_PLATFORM_XCB_KHR
 #include <xcb/xcb.h>
 #endif //XCB_INCLUDE
@@ -50,7 +51,7 @@
  * C-style macros to get a procedure address based on a vulkan instance or device.
  *
  * TODO Sadly modules haven't been added in modern C++ yet and we have no way to do
- * preprocessor macros in modern C++ safely yet, so we should remove these macros eventually
+ * preprocessor macros in modern C++ safely, so we should remove these macros eventually
  * since C-style macros don't respect C++ namespaces. NOTE when removing these there is a TODO corresponding
  * to this in the associated vulkan cpp file where the macros are called. This shouldn't be too hard to fix.
  **/
@@ -75,7 +76,7 @@ namespace VK {
 
    * TODO/NOTE I haven't filled out too much information about what each of these members are for,
    * but the vulkan specification does a really good job and
-   * even  has a search engine that you can type the type names into.
+   * even has a search engine that you can type the type names into.
    *
    * NOTE here is a link to the documentation for all of the vulkan stuff.
    * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/
@@ -84,8 +85,12 @@ namespace VK {
    **/
 
 
-  
-
+  /**
+   * This wraps up vulkan's physical devices and all of it's associated
+   * state and behavior.
+   * For more details see the following link.
+   * https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/chap4.html#devsandqueues
+   **/
   struct PhysicalDevice {
     VkPhysicalDevice handle;
     VkPhysicalDeviceProperties properties;
@@ -102,6 +107,8 @@ namespace VK {
     bool isDiscrete() const;
 
     /**
+     * This function get's all of the physical device's associated queue families with queue
+     * properties specified by the passed in VkQueueFlagBits.
      * @param the flags of the queues you want to fetch.
      * @return the indicies of all the queue with flags.
      **/
@@ -116,7 +123,7 @@ namespace VK {
 
     /**
      * @param appName the name of the application requesting an instance.
-     * @param eingineName the name of the engine appName is using.
+     * @param engineName the name of the engine appName is using.
      * @param extensions the instance level extension to enable.
      **/
     Instance(const std::string& appName,
@@ -139,15 +146,13 @@ namespace VK {
   };
 
 
-  // Everything below this point is basically broken
-
-
   struct LogicalDevice {
     VkDevice handle;
     LogicalDevice(const Instance& instance,
-                  const PhysicalDevice& devices) {
-    }
+                  const PhysicalDevice& devices);
   };
+
+  // Everything below this point is basically broken
 
 
   struct SwapChainBuffer {

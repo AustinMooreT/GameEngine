@@ -8,8 +8,9 @@
 namespace VK {
 
   /**
-   * Instance struct member implementation
+   * Instance struct member implementations
    **/
+
   Instance::Instance(const std::string& appName,
                      const std::string& engineName,
                      const std::vector<std::string>& extensions) {
@@ -86,8 +87,10 @@ namespace VK {
 
 
   /**
-   * PhysicalDevice struct member implementation
+   * PhysicalDevice struct member implementationa
    **/
+
+
   PhysicalDevice::PhysicalDevice(const VkPhysicalDevice& handle) : handle{handle} {
     vkGetPhysicalDeviceProperties(handle, &(this->properties));
     vkGetPhysicalDeviceFeatures(handle, &(this->features));
@@ -116,6 +119,19 @@ namespace VK {
     }
     return indicies;
   }
+
+  /**
+   * LogicalDevice struct member implementations
+   **/
+
+  LogicalDevice::LogicalDevice(const PhysicalDevice& devices,
+                               const VkPhysicalDeviceFeatures& features,
+                               const std::vector<std::string>& extensions,
+                               const QueueFamilyConfig qfam) {
+    
+  }
+
+  // stuff below here is nasty
 
   std::size_t selectPhysicalDevice(const std::vector<PhysicalDevice>& devs) {
     if(devs.size() == 0) {
