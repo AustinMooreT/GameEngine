@@ -5,6 +5,7 @@
  * This contains some good and some bad.
  **/
 
+
 namespace VK {
 
   /**
@@ -120,15 +121,44 @@ namespace VK {
     return indicies;
   }
 
+  VkDeviceQueueCreateInfo configureQueueFamily(const std::size_t& index,
+                                               const std::size_t& count,
+                                               const std::vector<float>& priorities) {
+    VkDeviceQueueCreateInfo queueInfo{};
+    queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueInfo.queueFamilyIndex = static_cast<uint32_t>(index);
+    queueInfo.queueCount = static_cast<uint32_t>(count);
+    queueInfo.pQueuePriorities = priorities.data();
+    return queueInfo;
+  }
+
   /**
-   * LogicalDevice struct member implementations
+   * LogicalDevice implementation.
    **/
 
-  LogicalDevice::LogicalDevice(const PhysicalDevice& devices,
+  LogicalDevice::LogicalDevice(const PhysicalDevice& device,
                                const VkPhysicalDeviceFeatures& features,
                                const std::vector<std::string>& extensions,
-                               const QueueFamilyConfig qfam) {
-    
+                               const std::vector<VkDeviceQueueCreateInfo> qfamilies) {
+    VkDeviceCreateInfo deviceCreateInfo;
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(qfamilies.size());;
+    deviceCreateInfo.pQueueCreateInfos = qfamilies.data();
+    deviceCreateInfo.pEnabledFeatures = &features;
+    std::vector<char*> cstrExtensions;
+    if (extensions.size() > 0) {
+      deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+      for(std::size_t i = 0; i < extensions.size(); i++) {
+        cstrExtensions.push_back(const_cast<char*>(extensions[i].c_str()));
+      }
+      deviceCreateInfo.ppEnabledExtensionNames = cstrExtensions.data();
+    }
+    vkCreateDevice(device.handle, &deviceCreateInfo, nullptr, &(this->handle));
+  }
+
+  LogicalDevice::~LogicalDevice() {
+    //NOTE nullptr here is for memory callbacks.
+    vkDestroyDevice(this->handle, nullptr);
   }
 
   // stuff below here is nasty

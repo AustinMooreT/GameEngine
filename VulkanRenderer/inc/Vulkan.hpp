@@ -84,7 +84,6 @@ namespace VK {
    * should be your first stop.
    **/
 
-
   /**
    * This wraps up vulkan's physical devices and all of it's associated
    * state and behavior.
@@ -113,6 +112,21 @@ namespace VK {
      * @return the indicies of all the queue with flags.
      **/
     std::vector<std::size_t> getQueueFamilies(const VkQueueFlagBits& flags) const;
+
+    /**
+     * TODO maybe wrap up the return type here with some extra information about the queue
+     *      I was thinking of maybe making a "LogicalQueue" type that would then be composed within the
+     *      LogicalDevice type.
+     *
+     * This function generates a struct used for selecting queues to be used by a logical device.
+     * @param index is the queue family index to select these queues from.
+     * @param count is the number of queues from that queue family to use.
+     * @param priorities is a list of priority's to assign to each queue (should be the sime size as count)
+     * @return a struct to be used during logical device creation.
+     **/
+    VkDeviceQueueCreateInfo configureQueueFamily(const std::size_t& index,
+                                                 const std::size_t& count,
+                                                 const std::vector<float>& priorities);
   };
 
 
@@ -148,9 +162,13 @@ namespace VK {
 
   struct LogicalDevice {
     VkDevice handle;
-    LogicalDevice(const Instance& instance,
-                  const PhysicalDevice& devices);
+    LogicalDevice(const PhysicalDevice& devices,
+                  const VkPhysicalDeviceFeatures& features,
+                  const std::vector<std::string>& extensions,
+                  const std::vector<VkDeviceQueueCreateInfo> qfamilies);
+    ~LogicalDevice();
   };
+
 
   // Everything below this point is basically broken
 
@@ -193,23 +211,7 @@ namespace VK {
     ~Renderer();
   };
 
-  bool checkQueueFamilyIndicies(const PhysicalDevice& dev);
-
-  std::vector<std::size_t> filterQueueFamily(std::vector<std::size_t> qf,
-                                             std::vector<std::size_t> qfc);
-
-  void classifyQueueFamilyIndicies();
-
-  void createLogicalDevice();
-
-  void initPhysicalDevice();
-
-  VkSurfaceKHR createSurface(SCREEN::Window& w);
-
   void createSwapChain(SCREEN::Window& w);
-
-
-
 
   /**
      @param devs a vector of physical devices.
