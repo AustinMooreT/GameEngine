@@ -165,12 +165,10 @@ namespace VK {
     LogicalDevice(const PhysicalDevice& devices,
                   const VkPhysicalDeviceFeatures& features,
                   const std::vector<std::string>& extensions,
+                  // TODO/NOTE I'm kind of tentative on using the plain VkDeviceQueueCreateInfo type here.
                   const std::vector<VkDeviceQueueCreateInfo> qfamilies);
     ~LogicalDevice();
   };
-
-
-  // Everything below this point is basically broken
 
 
   struct SwapChainBuffer {
@@ -198,18 +196,21 @@ namespace VK {
     std::vector<SwapChainBuffer> buffers;
   };
 
-
   /**
-   * TODO maybe rename this structure.
+   * NOTE I'd like for all vulkan state to be encapsulated and managed by this struct.
    **/
-  struct Renderer {
+  struct Vulkan {
     Instance instance;
     std::vector<PhysicalDevice> physicalDevices;
-    LogicalDevice logicalDevice;
+    std::vector<LogicalDevice> logicalDevices;
     std::optional<SwapChain> swapChain;
-    Renderer(const std::string& engineName);
-    ~Renderer();
+    Vulkan(const std::string& engineName);
+    ~Vulkan();
   };
+
+  // Everything below this point is basically broken.
+
+  
 
   void createSwapChain(SCREEN::Window& w);
 
@@ -239,47 +240,6 @@ namespace VK {
     return ret;
   }
 
-  //TODO a lot of documentation here.
-  LogicalDevice createVkLogicalDevice(const PhysicalDevice& physDev,
-                                      const VkPhysicalDeviceFeatures& enabledFeatures,
-                                      const std::vector<std::size_t>& qi,
-                                      const std::vector<uint32_t>& qc,
-                                      const std::vector<std::vector<float>>& qp,
-                                      void* pNextChain,
-                                      const std::vector<std::string>& enabledExtensions) {
-    LogicalDevice ret;
-    std::vector<VkDeviceQueueCreateInfo> qs(qi.size());
-    for(std::size_t i = 0; i < qi.size(); i++) {
-      qs[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-      qs[i].queueFamilyIndex = static_cast<uint32_t>(qi[i]);
-      qs[i].queueCount = qc[i];
-      qs[i].pQueuePriorities = &qp[i].front();
-    }
-    VkDeviceCreateInfo deviceCreateInfo;
-    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(qs.size());;
-    deviceCreateInfo.pQueueCreateInfos = qs.data();
-    deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
-    VkPhysicalDeviceFeatures2 physicalDeviceFeatures2;
-    if(pNextChain) {
-      physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-      physicalDeviceFeatures2.features = enabledFeatures;
-      physicalDeviceFeatures2.pNext = pNextChain;
-      deviceCreateInfo.pEnabledFeatures = nullptr;
-      deviceCreateInfo.pNext = &physicalDeviceFeatures2;
-    }
-    std::vector<char*> cstrExtensions;
-    if (enabledExtensions.size() > 0) {
-      deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size());
-      for(std::size_t i = 0; i < enabledExtensions.size(); i++) {
-        cstrExtensions.push_back(const_cast<char*>(enabledExtensions[i].c_str()));
-      }
-      deviceCreateInfo.ppEnabledExtensionNames = &cstrExtensions.front();
-    }
-    vkCreateDevice(physDev.deviceHandle, &deviceCreateInfo, nullptr, &ret.deviceHandle);
-    return ret;
-  }
-
   VkCommandPool createVkCommandPool(const LogicalDevice& ld,
                                     std::size_t qi,
                                     const std::vector<VkCommandPoolCreateFlags>& cf) {
@@ -288,7 +248,7 @@ namespace VK {
     cinfo.queueFamilyIndex = static_cast<uint32_t>(qi);
     cinfo.flags = std::accumulate(cf.begin(), cf.end(), 0, std::bit_and<VkCommandPoolCreateFlags>());
     VkCommandPool cmdPool;
-    vkCreateCommandPool(ld.deviceHandle, &cinfo, nullptr, &cmdPool);
+    vkCreateCommandPool(ld.handle, &cinfo, nullptr, &cmdPool);
     return cmdPool;
   }
 
@@ -297,9 +257,9 @@ namespace VK {
     std::vector<VkSurfaceFormatKHR> ret;
     uint32_t formatCount = 0;
     //TODO error checking
-    fpGetPhysicalDeviceSurfaceFormatsKHR(physdev.deviceHandle, srf, &formatCount, nullptr);
+    //fpGetPhysicalDeviceSurfaceFormatsKHR(physdev.handle, srf, &formatCount, nullptr);
     ret.resize(formatCount);
-    fpGetPhysicalDeviceSurfaceFormatsKHR(physdev.deviceHandle, srf, &formatCount, &ret.front());
+    //fpGetPhysicalDeviceSurfaceFormatsKHR(physdev.handle, srf, &formatCount, &ret.front());
     return ret;
   }
 
@@ -307,10 +267,10 @@ namespace VK {
                                                   const VkSurfaceKHR& srf) {
     uint32_t presentModeCount;
     //NOTE NO ERROR CHECKING!!!
-		fpGetPhysicalDeviceSurfacePresentModesKHR(physdev.deviceHandle, srf, &presentModeCount, nullptr);
+		//fpGetPhysicalDeviceSurfacePresentModesKHR(physdev.deviceHandle, srf, &presentModeCount, nullptr);
     std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-		fpGetPhysicalDeviceSurfacePresentModesKHR(physdev.deviceHandle,
-                                              srf, &presentModeCount, &presentModes.front());
+		//fpGetPhysicalDeviceSurfacePresentModesKHR(physdev.deviceHandle,
+    //                                              srf, &presentModeCount, &presentModes.front());
     return presentModes;
   }
 
@@ -318,7 +278,7 @@ namespace VK {
                                                     const VkSurfaceKHR& srf) {
     VkSurfaceCapabilitiesKHR surfCaps;
     //NOTE NO ERROR CHECKING!!!
-		fpGetPhysicalDeviceSurfaceCapabilitiesKHR(physdev.deviceHandle, srf, &surfCaps);
+		//fpGetPhysicalDeviceSurfaceCapabilitiesKHR(physdev.deviceHandle, srf, &surfCaps);
     return surfCaps;
   }
 
@@ -332,7 +292,7 @@ namespace VK {
       //TODO what are buffers here?
       //vkDestroyImageView(physDev.deviceHandle, buffers[i].view, nullptr);
     }
-    vkDestroySwapchainKHR(logicalDev.deviceHandle, swapchain, nullptr);
+    //vkDestroySwapchainKHR(logicalDev.deviceHandle, swapchain, nullptr);
     vkDestroySurfaceKHR(inst, surface, nullptr);
   }
 
@@ -423,7 +383,7 @@ namespace VK {
                                                         const std::size_t imageCount) {
     std::vector<VkImage> imageHandles(imageCount);
     uint32_t imc = static_cast<uint32_t>(imageCount);
-    vkGetSwapchainImagesKHR(logicalDev.deviceHandle, swapchain,
+    vkGetSwapchainImagesKHR(logicalDev.handle, swapchain,
                             &imc, &imageHandles.front());
     std::vector<SwapChainBuffer> buffers(imageCount);
     for(std::size_t i = 0; i < imageHandles.size(); i++) {
@@ -447,7 +407,7 @@ namespace VK {
 			colorAttachmentView.flags = 0;
       buffers[i].image = imageHandles[i];
       colorAttachmentView.image = buffers[i].image;
-      vkCreateImageView(logicalDev.deviceHandle, &colorAttachmentView, nullptr, &buffers[i].view);
+      vkCreateImageView(logicalDev.handle, &colorAttachmentView, nullptr, &buffers[i].view);
     }
     return buffers;
   }
@@ -492,7 +452,7 @@ namespace VK {
 		if(surfCaps.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT) {
 			swapchainCI.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		}
-    vkCreateSwapchainKHR(logicalDev.deviceHandle, &swapchainCI, nullptr, &swapChain);
+    vkCreateSwapchainKHR(logicalDev.handle, &swapchainCI, nullptr, &swapChain);
     return swapChain;
   }
 
@@ -502,7 +462,7 @@ namespace VK {
     std::vector<std::size_t> ret;
     for(auto&& i : queueIndicies) {
       VkBool32 check;
-      vkGetPhysicalDeviceSurfaceSupportKHR(physDev.deviceHandle, static_cast<uint32_t>(i), surf, &check);
+      vkGetPhysicalDeviceSurfaceSupportKHR(physDev.handle, static_cast<uint32_t>(i), surf, &check);
       if(check == VK_TRUE) {
         ret.push_back(i);
       }

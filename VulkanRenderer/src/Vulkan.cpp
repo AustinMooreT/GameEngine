@@ -161,22 +161,43 @@ namespace VK {
     vkDestroyDevice(this->handle, nullptr);
   }
 
-  // stuff below here is nasty
+  /**
+   * Vulkan implementation.
+   **/
 
+  /**
+   * This function is used to select a physical device currently I just select
+   * the first available discrete gpu or just the first available gpu.
+   **/
   std::size_t selectPhysicalDevice(const std::vector<PhysicalDevice>& devs) {
     if(devs.size() == 0) {
       std::cerr << "VK::selectPhysicalDevice::NO_DEVICES\n";
     }
-    //TODO maybe fix this up a bit currently we just return the first device satisfying our constraints.
     for(std::size_t i = 0; i < devs.size(); i++) {
-      if(devs[i].isDiscrete() && checkQueueFamilyIndicies(devs[i])) {
+      if(devs[i].isDiscrete()) {
         return i;
       }
     }
-    std::cerr << "VK::selectPhysicalDevice::NO_DEVICES_MEETING_CRITERIA\n";
-    return -1;
+    return 0;
   }
 
+  Vulkan::Vulkan(const std::string& engineName) : instance(engineName, engineName,
+                                                           //These are platform specific extensions that
+                                                           //get enabled or disabled at compile time.
+    {  VK_KHR_SURFACE_EXTENSION_NAME,
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+       VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#endif
+#ifdef VK_USE_PLATFORM_XCB_KHR
+       VK_KHR_XCB_SURFACE_EXTENSION_NAME,
+#endif
+    }),
+       physicalDevices(instance.getPhysicalDevices()) {}
+
+
+
+  // stuff below here is nasty
+             /*
   void SwapChain::loadSurfacePFNS(const Instance& inst) {
     //TODO rewrite these after removing the macros in the header.
     GET_INSTANCE_PROC_ADDR(inst.handle, GetPhysicalDeviceSurfaceSupportKHR);
@@ -187,21 +208,7 @@ namespace VK {
 
   Renderer::Renderer(const std::string& engineName) {
     if(this->rendererCount == 0) {
-      this->instance = Instance(engineName,
-                                engineName,
-                                //These are platform specific extensions that
-                                //get enabled or disabled at compile time.
-                                {VK_KHR_SURFACE_EXTENSION_NAME,
-                          #ifdef VK_USE_PLATFORM_WIN32_KHR
-                                 VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-                          #endif
-                          #ifdef VK_USE_PLATFORM_XCB_KHR
-                                 VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-                          #endif
-                          #ifdef VK_USE_PLATFORM_WAYLAND_KHR
-                                 VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME,
-                          #endif
-                                });
+      this->instance = Instance
       auto devs = instance.getPhysicalDevices();
       this->physicalDevice = devs[selectPhysicalDevice(devs)];
     }
@@ -279,11 +286,6 @@ namespace VK {
                                           {});
   }
 
-  void initPhysicalDevice() {
-    auto devices{getVkPhysDevices(instanceHandle)};
-    //TODO add support for sli/crossfire
-    physicalDevice = devices[selectPhysicalDevice(devices)];
-  }
 
   VkSurfaceKHR createSurface(SCREEN::Window& w) {
     auto windowBindings{w.getBindings()};
@@ -299,6 +301,6 @@ namespace VK {
     setup.presentQueue = filterPresentQueues(allQueueIndicies, physicalDevice, setup.surface)[0];
   }
 
-
+             */
 
 };
